@@ -12,6 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# MIT License
+#
+# Modifications Copyright (C) 2023 Advanced Micro Devices, Inc. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import copy
 import gc
 import os
@@ -21,20 +43,22 @@ from itertools import product
 
 import numpy as np
 import pytest
-from numba import cuda
+#:! from numba import cuda
 
 import rmm
 import rmm._cuda.stream
-from rmm.allocators.cupy import rmm_cupy_allocator
-from rmm.allocators.numba import RMMNumbaManager
+#:! from rmm.allocators.cupy import rmm_cupy_allocator
+#:! from rmm.allocators.numba import RMMNumbaManager
+rmm_cupy_allocator = None
+RMMNumbaManager = None
 
-cuda.set_memory_manager(RMMNumbaManager)
+#:! cuda.set_memory_manager(RMMNumbaManager)
 
 _driver_version = rmm._cuda.gpu.driverGetVersion()
 _runtime_version = rmm._cuda.gpu.runtimeGetVersion()
 _CUDAMALLOC_ASYNC_SUPPORTED = (_driver_version >= 11020) and (
     _runtime_version >= 11020
-)
+) and False #: Currently not supported according to hipDeviceGetAttribute
 
 
 def array_tester(dtype, nelem, alloc):
@@ -61,24 +85,24 @@ _dtypes = [
     np.bool_,
 ]
 _nelems = [1, 2, 7, 8, 9, 32, 128]
-_allocs = [cuda]
+#:! _allocs = [cuda]
 
 
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_rmm_alloc(dtype, nelem, alloc):
+#:! @pytest.mark.parametrize("dtype", _dtypes)
+#:! @pytest.mark.parametrize("nelem", _nelems)
+#:! @pytest.mark.parametrize("alloc", _allocs)
+def _disabled_test_rmm_alloc(dtype, nelem, alloc):
     array_tester(dtype, nelem, alloc)
 
 
 # Test all combinations of default/managed and pooled/non-pooled allocation
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-@pytest.mark.parametrize(
-    "managed, pool", list(product([False, True], [False, True]))
-)
-def test_rmm_modes(dtype, nelem, alloc, managed, pool):
+#:! @pytest.mark.parametrize("dtype", _dtypes)
+#:! @pytest.mark.parametrize("nelem", _nelems)
+#:! @pytest.mark.parametrize("alloc", _allocs)
+#:! @pytest.mark.parametrize(
+#:!     "managed, pool", list(product([False, True], [False, True]))
+#:! )
+def _disabled_test_rmm_modes(dtype, nelem, alloc, managed, pool):
     assert rmm.is_initialized()
     array_tester(dtype, nelem, alloc)
 
@@ -89,10 +113,10 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
     array_tester(dtype, nelem, alloc)
 
 
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_rmm_csv_log(dtype, nelem, alloc, tmpdir):
+#:! @pytest.mark.parametrize("dtype", _dtypes)
+#:! @pytest.mark.parametrize("nelem", _nelems)
+#:! @pytest.mark.parametrize("alloc", _allocs)
+def _disabled_test_rmm_csv_log(dtype, nelem, alloc, tmpdir):
     suffix = ".csv"
 
     base_name = str(tmpdir.join("rmm_log.csv"))
@@ -244,14 +268,14 @@ def test_rmm_device_buffer_copy_from_host(hb):
     np.testing.assert_equal(expected, result)
 
 
-@pytest.mark.parametrize(
-    "cuda_ary",
-    [
-        lambda: rmm.DeviceBuffer.to_device(b"abc"),
-        lambda: cuda.to_device(np.array([97, 98, 99], dtype="u1")),
-    ],
-)
-def test_rmm_device_buffer_copy_from_device(cuda_ary):
+#:! @pytest.mark.parametrize(
+#:!     "cuda_ary",
+#:!     [
+#:!         lambda: rmm.DeviceBuffer.to_device(b"abc"),
+#:!         lambda: cuda.to_device(np.array([97, 98, 99], dtype="u1")),
+#:!     ],
+#:! )
+def _disabled_test_rmm_device_buffer_copy_from_device(cuda_ary):
     cuda_ary = cuda_ary()
     db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
     db.copy_from_device(cuda_ary)
@@ -283,8 +307,8 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     assert hb3 == hb
 
 
-@pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
-def test_rmm_pool_numba_stream(stream):
+#:! @pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
+def _disabled_test_rmm_pool_numba_stream(stream):
     rmm.reinitialize(pool_allocator=True)
 
     stream = rmm._cuda.stream.Stream(stream)
@@ -294,7 +318,7 @@ def test_rmm_pool_numba_stream(stream):
     assert a.ptr != 0
 
 
-def test_rmm_cupy_allocator():
+def _disabled_test_rmm_cupy_allocator():
     cupy = pytest.importorskip("cupy")
 
     m = rmm_cupy_allocator(42)
@@ -312,8 +336,8 @@ def test_rmm_cupy_allocator():
     assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
 
 
-@pytest.mark.parametrize("stream", ["null", "async"])
-def test_rmm_pool_cupy_allocator_with_stream(stream):
+#:! @pytest.mark.parametrize("stream", ["null", "async"])
+def _disabled_test_rmm_pool_cupy_allocator_with_stream(stream):
     cupy = pytest.importorskip("cupy")
 
     rmm.reinitialize(pool_allocator=True)
@@ -345,7 +369,7 @@ def test_rmm_pool_cupy_allocator_with_stream(stream):
     rmm.reinitialize()
 
 
-def test_rmm_pool_cupy_allocator_stream_lifetime():
+def _disabled_test_rmm_pool_cupy_allocator_stream_lifetime():
     cupy = pytest.importorskip("cupy")
 
     rmm.reinitialize(pool_allocator=True)
@@ -360,10 +384,10 @@ def test_rmm_pool_cupy_allocator_stream_lifetime():
     del x
 
 
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_pool_memory_resource(dtype, nelem, alloc):
+#:! @pytest.mark.parametrize("dtype", _dtypes)
+#:! @pytest.mark.parametrize("nelem", _nelems)
+#:! @pytest.mark.parametrize("alloc", _allocs)
+def _disabled_test_pool_memory_resource(dtype, nelem, alloc):
     mr = rmm.mr.PoolMemoryResource(
         rmm.mr.CudaMemoryResource(),
         initial_pool_size=1 << 22,
@@ -374,17 +398,17 @@ def test_pool_memory_resource(dtype, nelem, alloc):
     array_tester(dtype, nelem, alloc)
 
 
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-@pytest.mark.parametrize(
-    "upstream",
-    [
-        lambda: rmm.mr.CudaMemoryResource(),
-        lambda: rmm.mr.ManagedMemoryResource(),
-    ],
-)
-def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
+#:! @pytest.mark.parametrize("dtype", _dtypes)
+#:! @pytest.mark.parametrize("nelem", _nelems)
+#:! @pytest.mark.parametrize("alloc", _allocs)
+#:! @pytest.mark.parametrize(
+#:!     "upstream",
+#:!     [
+#:!         lambda: rmm.mr.CudaMemoryResource(),
+#:!         lambda: rmm.mr.ManagedMemoryResource(),
+#:!     ],
+#:! )
+def _disabled_test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
     mr = rmm.mr.FixedSizeMemoryResource(
         upstream(), block_size=1 << 20, blocks_to_preallocate=128
     )
@@ -393,20 +417,20 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
     array_tester(dtype, nelem, alloc)
 
 
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-@pytest.mark.parametrize(
-    "upstream_mr",
-    [
-        lambda: rmm.mr.CudaMemoryResource(),
-        lambda: rmm.mr.ManagedMemoryResource(),
-        lambda: rmm.mr.PoolMemoryResource(
-            rmm.mr.CudaMemoryResource(), 1 << 20
-        ),
-    ],
-)
-def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
+#:! @pytest.mark.parametrize("dtype", _dtypes)
+#:! @pytest.mark.parametrize("nelem", _nelems)
+#:! @pytest.mark.parametrize("alloc", _allocs)
+#:! @pytest.mark.parametrize(
+#:!     "upstream_mr",
+#:!     [
+#:!         lambda: rmm.mr.CudaMemoryResource(),
+#:!         lambda: rmm.mr.ManagedMemoryResource(),
+#:!         lambda: rmm.mr.PoolMemoryResource(
+#:!             rmm.mr.CudaMemoryResource(), 1 << 20
+#:!         ),
+#:!     ],
+#:! )
+def _disabled_test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     upstream = upstream_mr()
 
     # Add fixed-size bins 256KiB, 512KiB, 1MiB, 2MiB, 4MiB
@@ -448,10 +472,10 @@ def test_reinitialize_initial_pool_size_gt_max():
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
 
 
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
+#:! @pytest.mark.parametrize("dtype", _dtypes)
+#:! @pytest.mark.parametrize("nelem", _nelems)
+#:! @pytest.mark.parametrize("alloc", _allocs)
+def _disabled_test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
     suffix = ".csv"
 
     base_name = str(tmpdir.join("rmm_log.csv"))
@@ -509,14 +533,14 @@ def test_mr_upstream_lifetime():
     del pool_mr
 
 
-@pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED,
-    reason="cudaMallocAsync not supported",
-)
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_cuda_async_memory_resource(dtype, nelem, alloc):
+#:! @pytest.mark.skipif(
+#:!     not _CUDAMALLOC_ASYNC_SUPPORTED,
+#:!     reason="cudaMallocAsync not supported",
+#:! )
+#:! @pytest.mark.parametrize("dtype", _dtypes)
+#:! @pytest.mark.parametrize("nelem", _nelems)
+#:! @pytest.mark.parametrize("alloc", _allocs)
+def _disabled_test_cuda_async_memory_resource(dtype, nelem, alloc):
     mr = rmm.mr.CudaAsyncMemoryResource()
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
@@ -571,13 +595,13 @@ def test_cuda_async_memory_resource_stream(nelems):
     np.testing.assert_equal(expected, result)
 
 
-@pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED,
-    reason="cudaMallocAsync not supported",
-)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_cuda_async_memory_resource_threshold(nelem, alloc):
+#:! @pytest.mark.skipif(
+#:!     not _CUDAMALLOC_ASYNC_SUPPORTED,
+#:!     reason="cudaMallocAsync not supported",
+#:! )
+#:! @pytest.mark.parametrize("nelem", _nelems)
+#:! @pytest.mark.parametrize("alloc", _allocs)
+def _disabled_test_cuda_async_memory_resource_threshold(nelem, alloc):
     # initial pool size == 0
     mr = rmm.mr.CudaAsyncMemoryResource(
         initial_pool_size=0, release_threshold=nelem
@@ -919,30 +943,30 @@ def test_reinit_hooks_unregister_twice_registered(make_reinit_hook):
     assert L == [2]
 
 
-@pytest.mark.parametrize(
-    "cuda_ary",
-    [
-        lambda: rmm.DeviceBuffer.to_device(b"abc"),
-        lambda: cuda.to_device(np.array([97, 98, 99, 0, 0], dtype="u1")),
-    ],
-)
-@pytest.mark.parametrize(
-    "make_copy", [lambda db: db.copy(), lambda db: copy.copy(db)]
-)
-def test_rmm_device_buffer_copy(cuda_ary, make_copy):
-    cuda_ary = cuda_ary()
-    db = rmm.DeviceBuffer.to_device(np.zeros(5, dtype="u1"))
-    db.copy_from_device(cuda_ary)
-    db_copy = make_copy(db)
-
-    assert db is not db_copy
-    assert db.ptr != db_copy.ptr
-    assert len(db) == len(db_copy)
-
-    expected = np.array([97, 98, 99, 0, 0], dtype="u1")
-    result = db_copy.copy_to_host()
-
-    np.testing.assert_equal(expected, result)
+#:! @pytest.mark.parametrize(
+#:!     "cuda_ary",
+#:!     [
+#:!         lambda: rmm.DeviceBuffer.to_device(b"abc"),
+#:!         lambda: cuda.to_device(np.array([97, 98, 99, 0, 0], dtype="u1")),
+#:!     ],
+#:! )
+#:! @pytest.mark.parametrize(
+#:!     "make_copy", [lambda db: db.copy(), lambda db: copy.copy(db)]
+#:! )
+#:! def test_rmm_device_buffer_copy(cuda_ary, make_copy):
+#:!     cuda_ary = cuda_ary()
+#:!     db = rmm.DeviceBuffer.to_device(np.zeros(5, dtype="u1"))
+#:!     db.copy_from_device(cuda_ary)
+#:!     db_copy = make_copy(db)
+#:! 
+#:!     assert db is not db_copy
+#:!     assert db.ptr != db_copy.ptr
+#:!     assert len(db) == len(db_copy)
+#:! 
+#:!     expected = np.array([97, 98, 99, 0, 0], dtype="u1")
+#:!     result = db_copy.copy_to_host()
+#:! 
+#:!     np.testing.assert_equal(expected, result)
 
 
 @pytest.mark.parametrize("level", rmm.logging_level)
